@@ -54,8 +54,7 @@ export async function getAttendanceForStudent(studentId: string) {
     .from('attendance')
     .select('id, student_id, date, status')
     .eq('student_id', studentId)
-    .order('date', { ascending: false })
-    .limit(10);
+    .order('date', { ascending: false });
 
   if (error) {
     console.error('Error fetching attendance:', error);

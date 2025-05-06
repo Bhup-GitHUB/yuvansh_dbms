@@ -26,51 +26,73 @@ const TeacherDashboard = () => {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const user = await getCurrentUser();
-      
-      if (!user) {
-        navigate('/login');
-        return;
-      }
-      
-      if (user.role !== 'teacher') {
+      try {
+        const user = await getCurrentUser();
+        
+        if (!user) {
+          navigate('/login');
+          return;
+        }
+        
+        if (user.role !== 'teacher') {
+          toast({
+            title: "Access denied",
+            description: "You don't have permission to access this page.",
+            variant: "destructive",
+          });
+          navigate('/login');
+          return;
+        }
+        
+        setTeacher(user);
+        
+        try {
+          const fetchedStudents = await getStudents();
+          setStudents(fetchedStudents);
+
+          // Create array of recent dates (5 days ago to today)
+          const today = new Date();
+          const dates = [];
+          for (let i = 4; i >= 0; i--) {
+            const date = new Date();
+            date.setDate(today.getDate() - i);
+            dates.push(date);
+          }
+          setRecentDates(dates);
+
+          // Fetch dates where attendance was already marked
+          if (fetchedStudents.length > 0) {
+            await fetchAttendanceDates(fetchedStudents[0]?.id);
+          }
+        } catch (error) {
+          console.error("Error setting up dashboard:", error);
+          toast({
+            title: "Error",
+            description: "There was a problem loading the dashboard.",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        console.error("Authentication error:", error);
         toast({
-          title: "Access denied",
-          description: "You don't have permission to access this page.",
+          title: "Authentication Error",
+          description: "Please try logging in again.",
           variant: "destructive",
         });
         navigate('/login');
-        return;
+      } finally {
+        setLoading(false);
       }
-      
-      setTeacher(user);
-      const fetchedStudents = await getStudents();
-      setStudents(fetchedStudents);
-
-      // Create array of recent dates (5 days ago to today)
-      const today = new Date();
-      const dates = [];
-      for (let i = 4; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(today.getDate() - i);
-        dates.push(date);
-      }
-      setRecentDates(dates);
-
-      // Fetch dates where attendance was already marked
-      await fetchAttendanceDates();
-      
-      setLoading(false);
     };
     
     checkAuth();
   }, [navigate]);
 
-  const fetchAttendanceDates = async () => {
-    // Get the first student to check which dates have attendance
-    if (students.length === 0) return;
+  const fetchAttendanceDates = async (studentId?: string) => {
+    // Use provided studentId or first student in the list
+    const firstStudentId = studentId || students[0]?.id;
     
-    const firstStudentId = students[0]?.id;
+    // If no students are available, don't proceed but don't block either
     if (!firstStudentId) return;
     
     try {
@@ -85,6 +107,11 @@ const TeacherDashboard = () => {
       setAttendanceDates(data.map(item => item.date));
     } catch (error) {
       console.error('Error fetching attendance dates:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load attendance dates, but you can continue marking attendance.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -216,11 +243,17 @@ const TeacherDashboard = () => {
                 Marking attendance for: <span className="font-medium">{format(selectedDate, 'PPP')}</span>
               </div>
               
-              <AttendanceMarker 
-                students={students} 
-                date={formatDateString(selectedDate)} 
-                onComplete={fetchAttendanceDates}
-              />
+              {students.length > 0 ? (
+                <AttendanceMarker 
+                  students={students} 
+                  date={formatDateString(selectedDate)} 
+                  onComplete={fetchAttendanceDates}
+                />
+              ) : (
+                <div className="p-4 border rounded-md text-center">
+                  <p>No students available to mark attendance.</p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -232,24 +265,30 @@ const TeacherDashboard = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {students.map((student) => (
-                  <Card key={student.id} className="overflow-hidden">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-lg">{student.name}</CardTitle>
-                      <CardDescription>{student.email}</CardDescription>
-                    </CardHeader>
-                    <CardContent className="pb-2">
-                      <Button 
-                        onClick={() => handleViewStudentAttendance(student)}
-                        variant="outline"
-                      >
-                        View Attendance
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+              {students.length > 0 ? (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {students.map((student) => (
+                    <Card key={student.id} className="overflow-hidden">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-lg">{student.name}</CardTitle>
+                        <CardDescription>{student.email}</CardDescription>
+                      </CardHeader>
+                      <CardContent className="pb-2">
+                        <Button 
+                          onClick={() => handleViewStudentAttendance(student)}
+                          variant="outline"
+                        >
+                          View Attendance
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-4 border rounded-md text-center">
+                  <p>No students found in the system.</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </>

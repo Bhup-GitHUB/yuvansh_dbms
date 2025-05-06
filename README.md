@@ -6,7 +6,7 @@ A modern web application built with React, TypeScript, and Supabase, featuring a
 
 - **Frontend Framework:** React 18 with TypeScript
 - **Styling:** Tailwind CSS with shadcn/ui components
-- **Backend/Database:** Supabase
+- **Backend/Database:** Supabase (PostgreSQL)
 - **Build Tool:** Vite
 - **Routing:** React Router DOM
 - **Form Handling:** React Hook Form with Zod validation
@@ -22,16 +22,19 @@ A modern web application built with React, TypeScript, and Supabase, featuring a
 
 ```
 dbms/
-├── public/              # Static assets
-├── src/                # Source code
-│   ├── components/     # React components
-│   ├── hooks/         # Custom React hooks
-│   ├── integrations/  # Third-party integrations
-│   ├── lib/           # Utility functions and shared code
-│   ├── pages/         # Application pages/routes
-│   └── App.tsx        # Main application component
-├── supabase/          # Supabase configuration
-└── ...config files    # Various configuration files
+├── public/               # Static assets
+├── src/                 # Source code
+│   ├── components/      # React components
+│   ├── hooks/          # Custom React hooks
+│   ├── integrations/   # Third-party integrations
+│   ├── lib/            # Utility functions and shared code
+│   ├── pages/          # Application pages/routes
+│   └── App.tsx         # Main application component
+├── supabase/           # Supabase configuration and migrations
+│   ├── migrations/     # Database migration files
+│   ├── functions.sql   # SQL functions and procedures
+│   └── seed.sql        # Database seed data
+└── ...config files     # Various configuration files
 ```
 
 ## 🛠️ Setup and Installation
@@ -42,7 +45,15 @@ dbms/
    npm install
    ```
 3. Set up your Supabase environment variables
-4. Start the development server:
+4. Apply database migrations:
+   ```bash
+   npx supabase migration up
+   ```
+5. Seed the database:
+   ```bash
+   npx supabase db execute seed.sql
+   ```
+6. Start the development server:
    ```bash
    npm run dev
    ```
@@ -55,6 +66,37 @@ dbms/
 - `npm run lint` - Run ESLint
 - `npm run preview` - Preview production build
 
+## 📊 Database Schema
+
+### Core Tables
+- **users** - User information (students and teachers)
+- **courses** - Course information
+- **academic_periods** - Semester/term periods
+- **attendance** - Student attendance records
+- **course_enrollments** - Student enrollment in courses
+- **course_teachers** - Teacher assignments to courses
+
+### Views
+- **student_attendance_by_course** - Student attendance percentages by course
+- **daily_attendance_report** - Daily attendance summary by course
+- **attendance_summary** - Materialized view for attendance statistics
+
+### Functions and Procedures
+- **check_attendance_below_threshold** - Check if a student's attendance is below threshold
+- **get_students_with_low_attendance** - List students with attendance below threshold
+- **bulk_mark_attendance** - Mark attendance for multiple students at once
+- **get_teacher_attendance_stats** - Get attendance statistics for a teacher's courses
+- **search_students** - Search students by name, email, or ID
+- **generate_attendance_report** - Generate attendance report for a course
+
+### Database Features
+- **Indexes** - Optimized queries for student_id, date, and role
+- **Row-Level Security** - Protected database access
+- **Triggers** - Automatic updates to statistics and validation
+- **Materialized Views** - Precomputed attendance summaries
+- **Referential Integrity** - Foreign key constraints
+- **Validation** - Date validation within academic periods
+
 ## 🎨 Features
 
 - Modern React patterns with TypeScript
@@ -66,7 +108,10 @@ dbms/
 - Toast notifications
 - Carousel functionality
 - Date picking capabilities
-- And much more!
+- Course management
+- Historical attendance tracking
+- Statistical reporting
+- Multi-semester support
 
 ## 📝 Notes
 
@@ -89,7 +134,7 @@ The project uses a carefully selected set of modern dependencies for optimal dev
 - **State Management:** React Query
 - **Styling:** Tailwind CSS with animations
 - **Development:** TypeScript, ESLint, Vite
-- **Testing:** (Add testing framework if implemented)
+- **Database:** Supabase, PostgreSQL
 
 ## 🤝 Contributing
 

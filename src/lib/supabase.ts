@@ -15,38 +15,47 @@ export type AttendanceRecord = {
 };
 
 export async function getCurrentUser() {
-  const { data, error } = await supabase.auth.getUser();
-  
-  if (error || !data?.user) {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) return null;
+    
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', session.user.id)
+      .single();
+    
+    if (error) {
+      console.error('Error fetching current user:', error);
+      return null;
+    }
+    
+    return data as User;
+  } catch (error) {
+    console.error('Error in getCurrentUser:', error);
     return null;
   }
-
-  // Get the user's role from the profiles table
-  const { data: profile } = await supabase
-    .from('users')
-    .select('id, name, email, role')
-    .eq('id', data.user.id)
-    .single();
-
-  if (!profile) {
-    return null;
-  }
-
-  return profile as User;
 }
 
 export async function getStudents() {
-  const { data, error } = await supabase
-    .from('users')
-    .select('id, name, email, role')
-    .eq('role', 'student');
-
-  if (error) {
-    console.error('Error fetching students:', error);
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('role', 'student')
+      .order('name');
+    
+    if (error) {
+      console.error('Error fetching students:', error);
+      return [];
+    }
+    
+    return data as User[];
+  } catch (error) {
+    console.error('Error in getStudents:', error);
     return [];
   }
-
-  return data as User[];
 }
 
 export async function getAttendanceForStudent(studentId: string) {
